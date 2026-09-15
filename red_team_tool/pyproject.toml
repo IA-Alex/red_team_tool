@@ -1,0 +1,71 @@
+[project]
+name = "redteamcrew"
+version = "0.1.0"
+description = "redteamcrew using crewAI"
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "crewai[file-processing,litellm,tools]>=1.15.11,<2.0.0",
+    "exa-py",
+    "langgraph>=1.2.11",
+    "structlog>=26.1.0",
+]
+
+[project.scripts]
+redteamcrew = "redteamcrew.main:run"
+run_crew = "redteamcrew.main:run"
+train = "redteamcrew.main:train"
+replay = "redteamcrew.main:replay"
+test = "redteamcrew.main:test"
+run_with_trigger = "redteamcrew.main:run_with_trigger"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"
+project_id = "d933eaf2-c75f-4056-9baf-45bee63f3994"
+
+[tool.uv]
+override-dependencies = ["litellm<=1.82.6"]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1",
+    "pre-commit>=4.6.2",
+    "ruff>=0.16.7",
+]
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "build",
+    "dist",
+]
+
+# Same as Black.
+line-length = 88
+
+[tool.ruff.lint]
+# Enable all typical linting rules
+select = ["E", "F", "W", "I", "N", "PL"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+ignore_missing_imports = true

@@ -1,0 +1,240 @@
+---
+descubrimiento_de_superficie_de_ataque:
+  description: |-
+    Realizar reconocimiento completo sobre {authorized_scope} para el engagement {engagement_name} dirigido a {company_name}. Operar ÚNICAMENTE dentro del alcance definido en {rules_of_engagement}.
+
+    ## PROTOCOLO DE EJECUCIÓN
+
+    ### Paso 1 — Resolución DNS (APIs gratuitas de Google)
+    Para cada dominio en {authorized_scope}, consultar:
+    - `https://dns.google/resolve?name=DOMINIO&type=A` — IPs asociadas
+    - `https://dns.google/resolve?name=DOMINIO&type=MX` — servidores de correo
+    - `https://dns.google/resolve?name=DOMINIO&type=TXT` — registros SPF/DKIM/DMARC
+
+    ### Paso 2 — Enumeración de Subdominios
+    - `https://api.hackertarget.com/hostsearch/?q=DOMINIO` — subdominios indexados
+    - `https://api.hackertarget.com/dnslookup/?q=DOMINIO` — registros DNS completos
+    - `https://crt.sh/?q=%.DOMINIO&output=json` — Certificate Transparency logs
+
+    ### Paso 3 — Fingerprinting de IPs
+    Para cada IP descubierta:
+    - `https://internetdb.shodan.io/IP` — puertos abiertos, servicios, CVEs conocidos, hostnames
+
+    ### Paso 4 — Búsqueda OSINT complementaria
+    Usar OsintSearchTool para buscar: exposiciones públicas, credenciales filtradas, repositorios públicos, tecnologías identificadas en sitios web de {company_name}.
+
+    ### Paso 5 — Verificación de alcance
+    Confirmar que CADA hallazgo pertenece a {authorized_scope}. Si hay duda, marcarlo como "PENDIENTE DE VERIFICACIÓN".
+
+    ### Regla de parada
+    Si {authorized_scope} es vago o no permite identificar objetivos concretos — DETENER y reportar inmediatamente.
+  expected_output: |-
+    Informe **SuperficieDeAtaque** en markdown con las siguientes secciones:
+
+    ## Metadatos del Engagement
+    - Nombre: {engagement_name} | Empresa: {company_name} | Fecha: [fecha actual]
+
+    ## Dominios y Subdominios Descubiertos
+    | Subdominio | IP | Fuente | Estado |
+    |---|---|---|---|
+
+    ## Registros DNS
+    | Dominio | Tipo | Valor | Fuente |
+    |---|---|---|---|
+
+    ## IPs y Servicios (vía internetdb.shodan.io)
+    | IP | Puertos Abiertos | Servicios Detectados | CVEs Reportados | Hostnames |
+    |---|---|---|---|---|
+
+    ## Certificados SSL/TLS (vía crt.sh)
+    | Dominio | SANs | Emisor | Válido hasta |
+    |---|---|---|---|
+
+    ## Tecnologías Identificadas
+    | Activo | Tecnología | Versión | Confianza | Fuente |
+    |---|---|---|---|---|
+
+    ## Activos Notablemente Expuestos
+    - Portales de login, APIs públicas, paneles de administración, endpoints de debug
+
+    ## Fuentes Consultadas
+    Lista completa de todas las URLs consultadas
+
+    ## Declaración de Cumplimiento de Alcance
+    Confirmación de que todos los hallazgos están dentro de {authorized_scope}
+  agent: ocelotl_agent_recon
+identificacion_de_vulnerabilidades:
+  description: |-
+    Analizar el informe SuperficieDeAtaque del engagement {engagement_name} e identificar vulnerabilidades usando bases de datos CVE públicas y gratuitas. Solo actuar sobre activos dentro de {authorized_scope}.
+
+    ## PROTOCOLO DE EJECUCIÓN
+
+    ### Paso 1 — Búsqueda de CVEs por tecnología/versión
+    Para cada tecnología identificada en la SuperficieDeAtaque:
+    - `https://cve.circl.lu/api/search/PRODUCTO/VERSION` — vulnerabilidades por producto y versión
+    - Ejemplo: `https://cve.circl.lu/api/search/apache/2.4.49`
+
+    ### Paso 2 — Detalles de CVEs específicos
+    Para cada CVE encontrado relevante:
+    - `https://cve.circl.lu/api/cve/CVE-ID` — detalles completos: CVSS, descripción, referencias, exploits
+
+    ### Paso 3 — CISA Known Exploited Vulnerabilities
+    - `https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json` — CVEs con exploit activo en la naturaleza
+    - Verificar si algún CVE identificado aparece en esta lista (indica explotación activa conocida)
+
+    ### Paso 4 — Inteligencia de amenazas por dominio
+    Para cada dominio principal en {authorized_scope}:
+    - `https://otx.alienvault.com/api/v1/indicators/domain/DOMINIO/general` — reputación, amenazas asociadas
+    - `https://otx.alienvault.com/api/v1/indicators/domain/DOMINIO/malware` — malware relacionado
+
+    ### Paso 5 — Investigación OSINT complementaria
+    Usar OsintSearchTool para: exploits públicos disponibles, PoCs en GitHub, avisos de seguridad recientes de {company_name}.
+
+    ### Criterios de calidad de evidencia
+    - **Confianza Alta**: CVE con CVSS ≥ 7.0 + versión confirmada + exploit público disponible
+    - **Confianza Media**: CVE con versión probable + sin exploit confirmado
+    - **Confianza Baja**: Coincidencia de tecnología sin versión exacta o CVE sin exploit
+  expected_output: |-
+    Informe **Hallazgos** en markdown con las siguientes secciones:
+
+    ## Resumen Ejecutivo
+    | Severidad | Total |
+    |---|---|
+    | Crítico (CVSS ≥ 9.0) | N |
+    | Alto (CVSS 7.0-8.9) | N |
+    | Medio (CVSS 4.0-6.9) | N |
+    | Bajo (CVSS < 4.0) | N |
+
+    ## Tabla de Hallazgos
+    | ID | Activo | Tecnología/Versión | CVE | CVSS | Exploit Público | En CISA KEV | Confianza | Descripción |
+    |---|---|---|---|---|---|---|---|---|
+
+    ## Inteligencia de Amenazas por Dominio
+    Resultados de OTX AlienVault por dominio/IP
+
+    ## Exposiciones de Configuración (sin CVE)
+    Problemas de configuración, credenciales por defecto, paneles expuestos, cabeceras de seguridad faltantes
+
+    ## Fuentes Consultadas
+    URLs exactas consultadas en CVE CIRCL, CISA KEV, OTX AlienVault
+
+    ## Declaración de Cumplimiento de Alcance
+  agent: ocelotl_agent_analista
+  context:
+  - descubrimiento_de_superficie_de_ataque
+validacion_controlada_de_explotacion:
+  description: |-
+    Para cada hallazgo del informe de Hallazgos del engagement {engagement_name}, validar la explotabilidad usando técnicas no destructivas y controladas estrictamente dentro de {authorized_scope}.
+
+    Enfoque de validación por hallazgo:
+    1. Revisar código PoC público y avisos de exploits para comprender el mecanismo de la vulnerabilidad.
+    2. Para vulnerabilidades web: verificar respuestas del servicio, comprobar indicadores de presencia de vulnerabilidad (banners de versión, mensajes de error, comportamiento observable) mediante solicitudes HTTP seguras.
+    3. Para problemas de configuración: verificar la observabilidad de la configuración incorrecta a través de interfaces públicas únicamente.
+    4. NUNCA ejecutar payloads que puedan causar pérdida de datos, interrupción del servicio o acceso no autorizado.
+    5. Para cualquier hallazgo cuya validación requiera acciones de alto impacto (ej. escribir en base de datos, explotar autenticación), marcarlo como REQUIERE APROBACION HUMANA según {rules_of_engagement} y NO proceder.
+    6. Registrar cada acción tomada: marca de tiempo, objetivo, método, herramienta usada, resultado observado.
+  expected_output: |-
+    Un informe de HallazgosValidados en markdown con las siguientes secciones:
+    - **Hallazgos Confirmados**: ID de hallazgo, activo, vulnerabilidad, método de validación, evidencia recopilada, nivel de confianza
+    - **Hallazgos No Confirmados**: ID de hallazgo, razón no confirmado, seguimiento manual recomendado
+    - **Marcados para Aprobación Humana**: ID de hallazgo, razón marcada, método de validación propuesto que requiere aprobación
+    - **Registro de Acciones**: registro cronológico de todas las acciones de validación realizadas (marca de tiempo, objetivo, método, resultado)
+    - **Declaración de Cumplimiento de Alcance**: confirmación de que no se realizaron acciones fuera de {authorized_scope}
+  agent: ocelotl_agent_explotador
+  context:
+  - identificacion_de_vulnerabilidades
+aprobacion_humana_de_hallazgos:
+  description: "⏸️ PUNTO DE CONTROL HUMANO — Engagement: {engagement_name}\n\nEl sistema
+    ha completado la validación controlada de explotación. Antes de proceder a la
+    simulación adversarial, se requiere revisión y aprobación humana.\n\n## Qué debes
+    revisar\n\n### Hallazgos Confirmados\nRevisa cada hallazgo en la sección \"Hallazgos
+    Confirmados\" del informe HallazgosValidados.\n\n### ⚠️ Hallazgos que REQUIEREN
+    tu aprobación explícita\nLos hallazgos marcados como \"REQUIERE APROBACION HUMANA\"
+    necesitan tu decisión antes de continuar. Para cada uno indica:\n- ✅ APROBADO
+    — proceder con simulación adversarial\n- ❌ RECHAZADO — excluir de la simulación\n-
+    \U0001F504 MODIFICAR — cambiar el alcance o método\n\n### Instrucciones adicionales
+    (opcional)\nPuedes agregar restricciones adicionales, prioridades específicas
+    o notas para la fase de simulación adversarial.\n\n## Tu respuesta debe incluir\n1.
+    Lista de hallazgos aprobados para simulación\n2. Lista de hallazgos rechazados
+    (con razón breve)\n3. Instrucciones adicionales para el AgenteAdversarial (opcional)\n4.
+    Confirmación explícita: \"APROBADO PARA CONTINUAR\" o \"DETENER ENGAGEMENT\""
+  expected_output: |-
+    Decisión humana documentada que incluye:
+    - Lista de hallazgos aprobados para la fase de simulación adversarial
+    - Lista de hallazgos rechazados con justificación
+    - Instrucciones adicionales para el AgenteAdversarial (si aplica)
+    - Confirmación explícita del operador: APROBADO PARA CONTINUAR o DETENER ENGAGEMENT
+  agent: ocelotl_agent_fiscal
+  context:
+  - validacion_controlada_de_explotacion
+simulacion_de_rutas_de_ataque:
+  description: |-
+    Usando los HallazgosValidados del engagement {engagement_name}, simular comportamiento adversarial realista para construir cadenas de ataque multi-etapa dentro de {authorized_scope}.
+
+    Para cada ruta de ataque:
+    1. Comenzar desde el vector de acceso inicial más accesible (servicio expuesto, exposición de credenciales, aplicación pública vulnerable).
+    2. Encadenar hallazgos en una progresión realista: Acceso Inicial → Ejecución → Persistencia → Escalada de Privilegios → Movimiento Lateral → Recolección → Exfiltración.
+    3. Mapear cada paso a técnicas específicas de MITRE ATT&CK (incluir ID de Técnica y nombre).
+    4. Investigar TTPs de actores de amenaza reales relevantes para la industria de {company_name} para enriquecer el realismo de la simulación.
+    5. Asignar una probabilidad (Alta/Media/Baja) basada en la facilidad de explotación y la exposición del activo.
+    6. Asignar un rating de impacto de negocio (Crítico/Alto/Medio/Bajo) basado en los activos alcanzables al final de la cadena.
+    7. Solo construir rutas fundamentadas en hallazgos validados confirmados o marcados. No especular.
+  expected_output: |-
+    Un informe de RutasDeAtaque en markdown con las siguientes secciones:
+    - **Resumen de Rutas de Ataque**: número de rutas identificadas, ruta de mayor impacto
+    - **Narrativas de Cadenas de Ataque**: para cada ruta — descripción paso a paso, IDs de técnicas MITRE ATT&CK en cada paso, ID(s) de hallazgo inicial, rating de probabilidad, rating de impacto de negocio, activos en riesgo
+    - **Relevancia de Actores de Amenaza**: APTs o grupos de amenaza reales con TTPs similares (si aplica)
+    - **Lista Priorizada de Rutas**: tabla clasificada por puntuación combinada de probabilidad × impacto
+    - **Brechas de Cobertura**: hallazgos que no pudieron encadenarse (vulnerabilidades aisladas)
+  agent: ocelotl_agent_estratega
+  context:
+  - aprobacion_humana_de_hallazgos
+revision_y_clasificacion_de_hallazgos:
+  description: |-
+    Realizar una revisión analítica exhaustiva de todos los resultados del engagement {engagement_name}: los informes de SuperficieDeAtaque, Hallazgos, HallazgosValidados y RutasDeAtaque.
+
+    Proceso de revisión:
+    1. Cruzar referencias de cada hallazgo en todos los resultados de agentes para consistencia y calidad de evidencia.
+    2. Eliminar falsos positivos — documentar cada eliminación con: ID de hallazgo, razón del rechazo y brecha de evidencia identificada.
+    3. Validar que los hallazgos confirmados tengan evidencia suficiente (referencia CVE, indicador observable o resultado PoC).
+    4. Asignar clasificaciones finales de severidad usando puntuación base CVSS Y factores de riesgo contextual (exposición, criticidad del activo, explotabilidad en el entorno específico).
+    5. Reconciliar cualquier discrepancia entre los resultados del Agente de Vulnerabilidades y el Agente de Explotación.
+    6. Señalar brechas: activos en alcance no analizados adecuadamente, o hallazgos que necesiten evidencia adicional.
+    7. Producir los HallazgosRevisados definitivos — nada procede al informe sin esta aprobación.
+  expected_output: |-
+    Un informe de HallazgosRevisados en markdown con las siguientes secciones:
+    - **Resumen de Revisión**: total de hallazgos recibidos, total confirmados, total rechazados, desglose de clasificación
+    - **Hallazgos Confirmados**: ID de hallazgo, severidad final (Crítico/Alto/Medio/Bajo/Informativo), puntuación CVSS, activo afectado, descripción breve, base de evidencia, prioridad de remediación
+    - **Hallazgos Rechazados (Falsos Positivos)**: ID de hallazgo, severidad original reclamada, razón del rechazo
+    - **Evaluación de Calidad de Evidencia**: rating general por fase (Reconocimiento, Vulnerabilidades, Validación, Adversarial)
+    - **Brechas y Limitaciones**: áreas de análisis incompleto, pruebas adicionales recomendadas
+    - **Declaración de Aprobación del Analista**: confirmación formal de que la lista de hallazgos es precisa y está respaldada por evidencia
+  agent: ocelotl_agent_fiscal
+  context:
+  - descubrimiento_de_superficie_de_ataque
+  - identificacion_de_vulnerabilidades
+  - validacion_controlada_de_explotacion
+  - simulacion_de_rutas_de_ataque
+generacion_del_informe_final:
+  description: |-
+    Generar el informe final del engagement de red team para {engagement_name} dirigido a {company_name}. Sintetizar todos los resultados de las fases anteriores en un único informe de seguridad profesional y listo para entrega en markdown estructurado.
+
+    Estructura del informe:
+    1. **Resumen Ejecutivo** — narrativa de riesgo de alto nivel para la dirección: qué se encontró, cuál es el riesgo de negocio y qué debe hacerse primero. Lenguaje no técnico.
+    2. **Visión General del Engagement** — alcance ({authorized_scope}), reglas de engagement ({rules_of_engagement}), fechas, resumen de metodología.
+    3. **Metodología** — fases ejecutadas (Reconocimiento → Análisis de Vulnerabilidades → Validación → Simulación Adversarial → Revisión de Analista), herramientas y técnicas utilizadas.
+    4. **Hallazgos Técnicos** — para cada hallazgo confirmado: ID, severidad, CVSS, activo afectado, descripción, evidencia, pasos de reproducción (donde sea seguro documentar), impacto de negocio.
+    5. **Narrativas de Rutas de Ataque** — cada cadena de ataque en prosa + tabla de mapeo MITRE ATT&CK.
+    6. **Matriz de Resumen de Riesgos** — tabla 2D: Probabilidad vs. Impacto con hallazgos graficados.
+    7. **Hoja de Ruta de Remediación** — lista priorizada: acciones inmediatas (Crítico/Alto), corto plazo (Medio), largo plazo (Bajo/Informativo), con guía de remediación específica por hallazgo.
+    8. **Apéndice** — tabla de hallazgos crudos, declaraciones de cumplimiento de alcance, resumen del registro de acciones.
+  expected_output: 'Un informe completo y profesional de red team en markdown estructurado,
+    listo para entrega a {company_name}. El informe debe ser autocontenido, con todas
+    las secciones pobladas con datos reales del engagement, claramente organizado
+    y cubriendo: narrativa ejecutiva, hallazgos técnicos completos con evidencia,
+    rutas de ataque con mapeo MITRE ATT&CK, matriz de riesgos y hoja de ruta de remediación
+    priorizada. Sin secciones vacías — cada sección debe contener contenido real del
+    engagement.'
+  agent: ocelotl_agent_cronista
+  context:
+  - revision_y_clasificacion_de_hallazgos
