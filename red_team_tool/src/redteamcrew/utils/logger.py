@@ -13,4 +13,3 @@ structlog.configure(
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:
     return structlog.get_logger(f"zotz-core.{name}")  # type: ignore[no-any-return]
-

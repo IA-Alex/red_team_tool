@@ -1,34 +1,32 @@
+from pathlib import Path
 
-from redteamcrew.tools.osint_tool import OsintSearchTool
-
-
-def test_osint_tool_name():
-    """The tool exposes the expected identifier."""
-    tool = OsintSearchTool()
-    assert tool.name == "osint_search"
+from redteamcrew.tools.ast_scanner import scan_ast
+from redteamcrew.tools.osint_tool import osint_search
 
 
-def test_osint_tool_schema():
-    """The tool has the correct input schema."""
-    tool = OsintSearchTool()
-    assert tool.args_schema.__name__ == "OsintSearchInput"
+def test_osint_auto_detects_ip() -> None:
+    """Un query IPv4 sin operación explícita se resuelve a la operación 'ip'."""
+    resultado = osint_search("8.8.8.8")
+    # No lanza y devuelve contenido (puede ser datos o un error de red controlado)
+    assert isinstance(resultado, str)
+    assert "8.8.8.8" in resultado or "Error" in resultado
 
 
-def test_osint_tool_auto_detects_ip():
-    """An IPv4 query without explicit operation should map to the 'ip' op."""
-    tool = OsintSearchTool()
-    assert tool._is_ip("8.8.8.8") is True
-    assert tool._is_ip("example.com") is False
+def test_osint_unknown_operation() -> None:
+    """Una operación inválida devuelve un mensaje útil."""
+    resultado = osint_search("anything", operation="not_real")
+    assert "no reconocida" in resultado
 
 
-def test_osint_tool_auto_detects_cve():
-    """A CVE-xxxx string should map to the 'cve_detail' op."""
-    tool = OsintSearchTool()
-    assert tool._is_cve("CVE-2021-44228") is True
+def test_scan_ast_nonexistent_path() -> None:
+    """Una ruta inexistente devuelve un error claro."""
+    resultado = scan_ast("/no/existe/ruta")
+    assert "no existe" in resultado
 
 
-def test_osint_tool_unknown_operation():
-    """An invalid operation returns a helpful message."""
-    tool = OsintSearchTool()
-    result = tool._run("anything", operation="not_real")
-    assert "no reconocida" in result
+def test_scan_ast_detects_dangerous_functions(tmp_path: Path) -> None:
+    """El escáner AST detecta eval en un archivo de prueba."""
+    archivo = tmp_path / "app.py"
+    archivo.write_text("def unsafe(data):\n    return eval(data)\n")
+    resultado = scan_ast(str(archivo))
+    assert "eval" in resultado

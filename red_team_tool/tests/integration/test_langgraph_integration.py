@@ -1,9 +1,10 @@
-from redteamcrew.crew import RedteamcrewCrew
+from typing import Any
+
 from redteamcrew.graph.state import AgentState
 from redteamcrew.graph.workflow import build_workflow
 
 
-def _default_inputs():
+def _default_inputs() -> dict[str, Any]:
     return {
         "authorized_scope": "example.com",
         "engagement_name": "test-engagement",
@@ -14,31 +15,34 @@ def _default_inputs():
     }
 
 
-def test_langgraph_workflow_real_execution():
-    # Instancia real de la crew (se requiere configurar LLM_MODEL o tener
-    # variables de entorno)
-    redteam_crew = RedteamcrewCrew()
+def test_langgraph_workflow_compiles() -> None:
+    """El grafo LangGraph se construye y compila sin errores."""
+    app = build_workflow()
+    assert app is not None
 
-    # Construimos el workflow real
-    app = build_workflow(crew_instance=redteam_crew)
 
-    # Inicializamos el estado
-    # Usamos un objetivo pequeño y seguro
+def test_langgraph_workflow_real_execution() -> None:
+    # Requiere DEEPINFRA_API_KEY configurada.
+    app = build_workflow()
+
     initial_state = AgentState(
         objetivo="example.com",
         inputs=_default_inputs(),
         hallazgos=[],
         iteraciones=0,
         es_suficiente=False,
+        superficie="",
+        vulnerabilidades="",
+        validacion="",
+        aprobacion="",
+        rutas="",
+        revision="",
+        informe="",
     )
 
-    # Ejecutamos el flujo
-    # NOTA: Esto intentará llamar a los agentes reales.
-    # Asegúrate de tener las variables de entorno configuradas
-    # (ej. OPENAI_API_KEY, EXA_API_KEY)
     final_state = app.invoke(initial_state)
 
-    # Verificaciones
     assert final_state["iteraciones"] >= 1
     assert "es_suficiente" in final_state
+    assert final_state["informe"]
     print(f"Estado final: {final_state}")
