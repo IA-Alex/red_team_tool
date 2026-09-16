@@ -8,11 +8,20 @@ dependencies = [
     "langgraph>=1.2.11",
     "structlog>=26.1.0",
     "PyYAML>=6.0",
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.53.0",
+    "markdown>=3.10.3",
+    "arq>=0.26",
+    "redis>=5.0",
+    "networkx>=3.4.2",
+    "bleach>=6.4.0",
 ]
 
 [project.scripts]
 redteamcrew = "redteamcrew.main:run"
 run_crew = "redteamcrew.main:run"
+redteamcrew-api = "redteamcrew.api.__main__:main"
+redteamcrew-worker = "redteamcrew.worker:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -23,6 +32,7 @@ dev = [
     "mypy>=2.3.1",
     "pre-commit>=4.6.2",
     "pytest>=8.0",
+    "pytest-asyncio>=1.4.0",
     "ruff>=0.16.7",
     "types-PyYAML>=6.0",
 ]
@@ -59,3 +69,6 @@ disallow_untyped_defs = true
 disallow_incomplete_defs = true
 check_untyped_defs = true
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

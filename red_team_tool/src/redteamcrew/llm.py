@@ -19,7 +19,11 @@ log = get_logger("llm")
 
 DEFAULT_MODEL = "google/gemma-2-27b-it"
 CHAT_URL = "https://api.deepinfra.com/v1/chat/completions"
-TIMEOUT = 120
+# Una completion de max_tokens=4096 en un modelo de ~27B puede tardar ~100s
+# incluso sin carga (medido en vivo contra DeepInfra); con el contexto real
+# de nmap/nuclei que ahora se inyecta en los prompts de los nodos, 120s
+# quedaba al límite y producía timeouts intermitentes.
+TIMEOUT = 300
 
 _env_loaded: dict[str, bool] = {"done": False}
 
@@ -51,9 +55,23 @@ def _load_env_file() -> None:
 
 
 def get_api_key() -> str:
-    """Devuelve la API key de DeepInfra (fallback a OPENAI_API_KEY)."""
+    """Devuelve la API key de DeepInfra (fallback a OPENAI_API_KEY), o "" si falta."""
     _load_env_file()
     return os.getenv("DEEPINFRA_API_KEY") or os.getenv("OPENAI_API_KEY") or ""
+
+
+def require_api_key() -> str:
+    """Como ``get_api_key`` pero falla de inmediato si no hay clave configurada.
+
+    Pensada para validar la configuración al arrancar la CLI/API, en vez de
+    descubrir el problema recién en la primera llamada al LLM.
+    """
+    key = get_api_key()
+    if not key:
+        raise RuntimeError(
+            "Falta DEEPINFRA_API_KEY (o OPENAI_API_KEY) en el entorno o en .env."
+        )
+    return key
 
 
 def get_model() -> str:

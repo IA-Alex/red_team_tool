@@ -143,30 +143,6 @@ validacion_controlada_de_explotacion:
   agent: ocelotl_agent_explotador
   context:
   - identificacion_de_vulnerabilidades
-aprobacion_humana_de_hallazgos:
-  description: "⏸️ PUNTO DE CONTROL HUMANO — Engagement: {engagement_name}\n\nEl sistema
-    ha completado la validación controlada de explotación. Antes de proceder a la
-    simulación adversarial, se requiere revisión y aprobación humana.\n\n## Qué debes
-    revisar\n\n### Hallazgos Confirmados\nRevisa cada hallazgo en la sección \"Hallazgos
-    Confirmados\" del informe HallazgosValidados.\n\n### ⚠️ Hallazgos que REQUIEREN
-    tu aprobación explícita\nLos hallazgos marcados como \"REQUIERE APROBACION HUMANA\"
-    necesitan tu decisión antes de continuar. Para cada uno indica:\n- ✅ APROBADO
-    — proceder con simulación adversarial\n- ❌ RECHAZADO — excluir de la simulación\n-
-    \U0001F504 MODIFICAR — cambiar el alcance o método\n\n### Instrucciones adicionales
-    (opcional)\nPuedes agregar restricciones adicionales, prioridades específicas
-    o notas para la fase de simulación adversarial.\n\n## Tu respuesta debe incluir\n1.
-    Lista de hallazgos aprobados para simulación\n2. Lista de hallazgos rechazados
-    (con razón breve)\n3. Instrucciones adicionales para el AgenteAdversarial (opcional)\n4.
-    Confirmación explícita: \"APROBADO PARA CONTINUAR\" o \"DETENER ENGAGEMENT\""
-  expected_output: |-
-    Decisión humana documentada que incluye:
-    - Lista de hallazgos aprobados para la fase de simulación adversarial
-    - Lista de hallazgos rechazados con justificación
-    - Instrucciones adicionales para el AgenteAdversarial (si aplica)
-    - Confirmación explícita del operador: APROBADO PARA CONTINUAR o DETENER ENGAGEMENT
-  agent: ocelotl_agent_fiscal
-  context:
-  - validacion_controlada_de_explotacion
 simulacion_de_rutas_de_ataque:
   description: |-
     Usando los HallazgosValidados del engagement {engagement_name}, simular comportamiento adversarial realista para construir cadenas de ataque multi-etapa dentro de {authorized_scope}.
@@ -188,7 +164,7 @@ simulacion_de_rutas_de_ataque:
     - **Brechas de Cobertura**: hallazgos que no pudieron encadenarse (vulnerabilidades aisladas)
   agent: ocelotl_agent_estratega
   context:
-  - aprobacion_humana_de_hallazgos
+  - validacion_controlada_de_explotacion
 revision_y_clasificacion_de_hallazgos:
   description: |-
     Realizar una revisión analítica exhaustiva de todos los resultados del engagement {engagement_name}: los informes de SuperficieDeAtaque, Hallazgos, HallazgosValidados y RutasDeAtaque.

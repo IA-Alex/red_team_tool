@@ -23,27 +23,38 @@ import urllib.request
 from typing import Callable
 
 _TIMEOUT = 20
+# crt.sh (certificados CT) y la KEV de CISA devuelven payloads mucho más
+# pesados que el resto de fuentes y son notoriamente lentos bajo carga; el
+# resto de operaciones se queda con el timeout por defecto.
+_TIMEOUT_OVERRIDES = {
+    "certs": 40,
+    "cisa_kev": 40,
+}
 _IPV4_OCTETS = 4
 _IPV4_MAX = 255
 
 _USER_AGENT = "Zotz-OSINT/0.1 (red team engagement)"
 
 
-def _fetch_json(url: str) -> dict | list:
+def _timeout_para(operacion: str) -> int:
+    return _TIMEOUT_OVERRIDES.get(operacion, _TIMEOUT)
+
+
+def _fetch_json(url: str, timeout: int = _TIMEOUT) -> dict | list:
     req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:  # noqa: S310 - URLs de fuentes públicas definidas
+    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - URLs de fuentes públicas definidas
         return json.loads(resp.read().decode("utf-8"))  # type: ignore[no-any-return]
 
 
-def _fetch_text(url: str) -> str:
+def _fetch_text(url: str, timeout: int = _TIMEOUT) -> str:
     req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
-    with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:  # noqa: S310 - URLs de fuentes públicas definidas
+    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - URLs de fuentes públicas definidas
         return resp.read().decode("utf-8", errors="replace")  # type: ignore[no-any-return]
 
 
-def _safe_fetch(url: str) -> str:
+def _safe_fetch(url: str, timeout: int = _TIMEOUT) -> str:
     try:
-        return _fetch_text(url)
+        return _fetch_text(url, timeout=timeout)
     except urllib.error.HTTPError as e:
         return f"HTTP {e.code} al consultar {url}"
     except urllib.error.URLError as e:
@@ -72,7 +83,7 @@ def _op_subdomains(domain: str) -> str:
 
 def _op_certs(domain: str) -> str:
     url = f"https://crt.sh/?q=%.{domain}&output=json"
-    return _safe_fetch(url)
+    return _safe_fetch(url, timeout=_timeout_para("certs"))
 
 
 def _op_ip(ip: str) -> str:
@@ -96,7 +107,7 @@ def _op_cisa_kev() -> str:
         "https://www.cisa.gov/sites/default/files/feeds/"
         "known_exploited_vulnerabilities.json"
     )
-    return _safe_fetch(url)
+    return _safe_fetch(url, timeout=_timeout_para("cisa_kev"))
 
 
 def _op_otx(domain: str) -> str:

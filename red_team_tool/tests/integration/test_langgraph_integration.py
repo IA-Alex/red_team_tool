@@ -29,6 +29,8 @@ def test_langgraph_workflow_real_execution() -> None:
         objetivo="example.com",
         inputs=_default_inputs(),
         hallazgos=[],
+        hosts=[],
+        hallazgos_verificados=[],
         iteraciones=0,
         es_suficiente=False,
         superficie="",

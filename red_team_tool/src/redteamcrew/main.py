@@ -13,8 +13,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-from redteamcrew.graph.state import AgentState
+from redteamcrew.graph.state import estado_inicial
 from redteamcrew.graph.workflow import build_workflow
+from redteamcrew.llm import require_api_key
+from redteamcrew.scope import ScopeError, validate_scope
 from redteamcrew.utils.logger import get_logger
 
 log = get_logger("cli")
@@ -66,6 +68,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--out",
         default="outputs",
         help="Directorio donde se guarda el informe final (default: outputs)",
+    )
+    parser.add_argument(
+        "--code-path",
+        dest="local_code_path",
+        help=(
+            "Ruta local de código a analizar estáticamente (opcional). "
+            "Requiere REDTEAMCREW_SCAN_ROOT configurado en el entorno."
+        ),
     )
     parser.add_argument(
         "--yes",
@@ -123,6 +133,13 @@ def run(argv: list[str] | None = None) -> None:
     """Punto de entrada de la CLI."""
     args = parse_args(argv)
 
+    try:
+        require_api_key()
+    except RuntimeError as e:
+        log.error("cli.config_invalida", mensaje=str(e))
+        print(f"Error: {e}")
+        sys.exit(2)
+
     inputs: Dict[str, Any] = {
         "authorized_scope": _preguntar("authorized_scope", args),
         "engagement_name": _preguntar("engagement_name", args),
@@ -135,24 +152,21 @@ def run(argv: list[str] | None = None) -> None:
         print("Error: debes indicar un alcance autorizado (--scope).")
         sys.exit(2)
 
+    try:
+        inputs["authorized_scope"] = validate_scope(inputs["authorized_scope"])
+    except ScopeError as e:
+        log.error("cli.alcance_invalido", mensaje=str(e))
+        print(f"Error: {e}")
+        sys.exit(2)
+
+    if getattr(args, "local_code_path", None):
+        inputs["local_code_path"] = args.local_code_path
+
     if not _confirmar(inputs):
         print("Engagement cancelado por el operador.")
         sys.exit(0)
 
-    initial_state: AgentState = {
-        "objetivo": inputs["authorized_scope"],
-        "inputs": inputs,
-        "hallazgos": [],
-        "iteraciones": 0,
-        "es_suficiente": False,
-        "superficie": "",
-        "vulnerabilidades": "",
-        "validacion": "",
-        "aprobacion": "",
-        "rutas": "",
-        "revision": "",
-        "informe": "",
-    }
+    initial_state = estado_inicial(inputs)
 
     log.info("cli.lanzando", scope=inputs["authorized_scope"])
     app = build_workflow()
